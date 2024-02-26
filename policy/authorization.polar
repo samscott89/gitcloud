@@ -44,11 +44,18 @@ resource Organization {
      # everyone can see all organizations
      "read" if "member" on "application";
 
+     # member < admin
+     "member" if "admin";
+
+
+     # PERMISSIONS: edit this part
+
+     # member permissions
      "read_details" if "member";
      "view_members" if "member";
      "create_repositories" if "member";
 
-     "member" if "admin";
+     # admin permissions
      "manage_members" if "admin";
      "set_default_role" if "admin";
      "delete" if "admin";
@@ -67,11 +74,15 @@ resource Repository {
 
      "reader" if "member" on "organization";
      "admin" if "admin" on "organization";
+     # reader < editor < maintainer < admin
      "reader" if "editor";
      "editor" if "maintainer";
      "maintainer" if "admin";
 
      "reader" if is_public(resource);
+
+
+     # PERMISSIONS: edit this part
 
      # reader permissions
      "read" if "reader";
@@ -83,6 +94,8 @@ resource Repository {
      "write" if "editor";
      "manage_jobs" if "editor";
      "manage_issues" if "editor";
+
+     # maintainer permissions
      "view_members" if "maintainer";
      "delete" if "maintainer" and is_protected(resource, false);
 
@@ -104,7 +117,6 @@ resource Issue {
      "close" if "creator";
 
      "comment" if "read" and is_closed(resource, false);
-
 }
 
 # Policy tests

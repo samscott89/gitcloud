@@ -1,5 +1,30 @@
-actor User { }
+actor User { 
+     permissions = [
+          "read", "read_profile"
+     ];
+     relations = {
+          application: Application
+     };
+
+     "read" if "member" on "application";
+     "read_profile" if is_self(actor, resource);
+}
+# users are themselves
+is_self(user: User, user: User);
+
 actor Group { }
+
+resource Application {
+     permissions = ["create_organization"];
+     roles = ["member"];
+
+     "create_organization" if "member";
+}
+
+# all users default to members of the application
+has_role(_user: User, "member", Application{"gitcloud"});
+
+has_relation(_: Resource, "application", Application{"gitclod"});
 
 resource Organization {
      permissions = [
@@ -12,6 +37,12 @@ resource Organization {
         "delete"
      ];
      roles = ["admin", "member"];
+     relations = {
+          application: Application
+     };
+
+     # everyone can see all organizations
+     "read" if "member" on "application";
 
      "read_details" if "member";
      "view_members" if "member";
@@ -40,6 +71,8 @@ resource Repository {
      "editor" if "maintainer";
      "maintainer" if "admin";
 
+     "reader" if is_public(resource);
+
      # reader permissions
      "read" if "reader";
      "read_issues" if "reader";
@@ -51,6 +84,7 @@ resource Repository {
      "manage_jobs" if "editor";
      "manage_issues" if "editor";
      "view_members" if "maintainer";
+     "delete" if "maintainer" and is_protected(resource, false);
 
      # admin permissions
      "manage_members" if "admin";
@@ -69,52 +103,9 @@ resource Issue {
 
      "close" if "creator";
 
+     "comment" if "read" and is_closed(resource, false);
+
 }
-
-has_permission(_: Actor, action: String, repo: Repository) if
-     action in ["read", "read_issues", "create_issues"] and
-     is_public(repo);
-
-
-has_permission(actor: Actor, "delete", repo: Repository) if
-     has_role(actor, "member", repo) and
-     is_protected(repo, false);
-
-
-# readers can only comment on open issues
-has_permission(actor: Actor, "comment", issue: Issue) if
-     has_permission(actor, "read", issue) and
-     is_closed(issue, false);
-
-
-# Misc rules:
-## All organizations are public
-has_permission(_: User, "read", _: Organization);
-has_permission(_: User, "create", "Organization");
-## Users can read all users
-has_permission(_: User, "read", _: User);
-## Users can only read their own profiles
-has_permission(user: User, "read_profile", user: User);
-
-
-# Complex rules
-
-# A custom role is defined by the permissions it grants
-has_permission(actor: Actor, action: String, org: Organization) if
-     role matches Role and
-     has_role(actor, role, org) and
-     grants_permission(role, action);
-
-has_role(actor: Actor, role: String, repo: Repository) if
-     org matches Organization and
-     has_relation(repo, "organization", org) and
-     has_default_role(org, role) and
-     has_role(actor, "member", org);
-
-declare has_relation(Repository, String, Organization);
-
-has_relation(_: Issue, "repository", repo: Repository) if
-     in_repo_context(repo);
 
 # Policy tests
 # Organization members inherit the read permission

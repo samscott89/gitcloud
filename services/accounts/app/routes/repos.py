@@ -4,17 +4,21 @@ from werkzeug.exceptions import NotFound, Forbidden
 
 
 from ..models import Repository
-from ..authorization import actions, authorize, list_resources, tell, oso
+from ..authorization import oso
 
 bp = Blueprint("repos", __name__, url_prefix="/orgs/<int:org_id>/repos")
 
 
 @bp.route("", methods=["GET"])
 def index(org_id):
-    if not authorize("read", {"type": "Organization", "id": org_id}):
+    user = {
+        "type": "User",
+        "id": str(g.current_user.id),
+    }
+    if not oso.authorize(user, "read", {"type": "Organization", "id": org_id}):
         raise NotFound
-    authorized_ids = list_resources("read", "Repository")
-    if authorized_ids and authorized_ids[0] == "*":
+    authorized_ids = oso.list(user, "read", "Repository")
+    if authorized_ids == ["*"]:
         repos = g.session.query(Repository).filter_by(org_id=org_id)
         return jsonify([r.as_json() for r in repos])
     else:
@@ -26,9 +30,15 @@ def index(org_id):
 
 @bp.route("", methods=["POST"])
 def create(org_id):
-    if not authorize("read", {"type": "Organization", "id": org_id}):
+    user = {
+        "type": "User",
+        "id": str(g.current_user.id),
+    }
+    if not oso.authorize(user, "read", {"type": "Organization", "id": org_id}):
         raise NotFound
-    if not authorize("create_repositories", {"type": "Organization", "id": org_id}):
+    if not oso.authorize(
+        user, "create_repositories", {"type": "Organization", "id": org_id}
+    ):
         raise Forbidden("you do not have permission to create repositories")
 
     payload = cast(dict, request.get_json(force=True))
@@ -44,32 +54,40 @@ def create(org_id):
     repo = Repository(name=payload["name"], org_id=org_id)
     g.session.add(repo)
     repoValue = {"type": "Repository", "id": repo.id}
-    tell(
+    oso.tell(
         "has_relation",
         repoValue,
         "organization",
         {"type": "Organization", "id": org_id},
     )
-    tell("has_role", g.current_user, "admin", repoValue)
+    oso.tell("has_role", g.current_user, "admin", repoValue)
     g.session.commit()
     return repo.as_json(), 201  # type: ignore
 
 
 @bp.route("/<int:repo_id>", methods=["GET"])
 def show(org_id, repo_id):
-    if not authorize("read", {"type": "Repository", "id": repo_id}):
+    user = {
+        "type": "User",
+        "id": str(g.current_user.id),
+    }
+    if not oso.authorize(user, "read", {"type": "Repository", "id": repo_id}):
         raise NotFound
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
     json = repo.as_json()
-    json["permissions"] = actions(repo)
+    json["permissions"] = oso.actions(user, repo)
     return json
 
 
 @bp.route("/<int:repo_id>", methods=["DELETE"])
 def delete(org_id, repo_id):
-    if not authorize("read", {"type": "Repository", "id": repo_id}):
+    user = {
+        "type": "User",
+        "id": str(g.current_user.id),
+    }
+    if not oso.authorize(user, "read", {"type": "Repository", "id": repo_id}):
         raise NotFound
-    if not authorize("delete", {"type": "Repository", "id": repo_id}):
+    if not oso.authorize(user, "delete", {"type": "Repository", "id": repo_id}):
         raise Forbidden
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
     g.session.delete(repo)

@@ -1,12 +1,12 @@
-from typing import Type, cast
-from sqlalchemy.types import Integer, String, Boolean, DateTime, JSON
+from typing import Any, Type, cast
+from sqlalchemy.types import Integer, String, Boolean
 from sqlalchemy.schema import Column, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship, backref, DeclarativeMeta, column_property
+from sqlalchemy.orm import relationship, column_property
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm.session import Session
 from sqlalchemy import select, func
-from sqlalchemy.sql.functions import concat
 from sqlalchemy.orm.relationships import RelationshipProperty
+from werkzeug.exceptions import Forbidden, NotFound
 
 Base: Type = declarative_base()
 
@@ -128,3 +128,23 @@ def setup_schema(base):
                 "as_json",
                 lambda self: {c: getattr(self, c) for c in self.__class__.__columns},
             )
+
+
+def get_or_raise(self, cls: Type[Any], error, **kwargs):
+    resource = self.query(cls).filter_by(**kwargs).one_or_none()
+    if resource is None:
+        raise error
+    return resource
+
+
+def get_or_403(self, cls: Type[Any], **kwargs):
+    return self.get_or_raise(cls, Forbidden, **kwargs)
+
+
+def get_or_404(self, cls: Type[Any], **kwargs):
+    return self.get_or_raise(cls, NotFound, **kwargs)
+
+
+Session.get_or_404 = get_or_404  # type: ignore
+Session.get_or_403 = get_or_403  # type: ignore
+Session.get_or_raise = get_or_raise  # type: ignore

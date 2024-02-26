@@ -3,7 +3,7 @@ from typing import cast
 from werkzeug.exceptions import Forbidden, Unauthorized, NotFound
 
 from ..models import Organization, User, Repository
-from ..authorization import authorize, query
+from ..authorization import oso
 
 bp = Blueprint("users", __name__, url_prefix="/users")
 
@@ -12,7 +12,11 @@ import oso_cloud
 
 @bp.route("/<username>", methods=["GET"])
 def show(username):
-    if not authorize("read_profile", {"type": "User", "id": username}):
+    user = {
+        "type": "User",
+        "id": str(g.current_user.id),
+    }
+    if not oso.authorize(user, "read_profile", {"type": "User", "id": username}):
         raise NotFound
     user = g.session.get_or_404(User, username=username)
     return user.as_json()
@@ -20,11 +24,15 @@ def show(username):
 
 @bp.route("/<username>/repos", methods=["GET"])
 def repo_index(username):
-    if not authorize("read_profile", {"type": "User", "id": username}):
+    user = {
+        "type": "User",
+        "id": str(g.current_user.id),
+    }
+    if not oso.authorize(user, "read_profile", {"type": "User", "id": username}):
         raise NotFound
 
     # get all the repositories that the user has a role for
-    repos = query(
+    repos = oso.query(
         "has_role", {"type": "User", "id": username}, {}, {"type": "Repository"}
     )
     repoIds = list(
@@ -41,11 +49,15 @@ def repo_index(username):
 
 @bp.route("/<username>/orgs", methods=["GET"])
 def org_index(username):
-    if not authorize("read_profile", {"type": "User", "id": username}):
+    user = {
+        "type": "User",
+        "id": str(g.current_user.id),
+    }
+    if not oso.authorize(user, "read_profile", {"type": "User", "id": username}):
         raise NotFound
 
     # get all the repositories that the user has a role for
-    orgs = query(
+    orgs = oso.query(
         "has_role", {"type": "User", "id": username}, {}, {"type": "Organization"}
     )
     orgIds = list(

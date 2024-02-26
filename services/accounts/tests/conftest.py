@@ -65,20 +65,6 @@ def test_gitclub(check_oso_cloud):
 
 
 @pytest.fixture(scope="session")
-def test_actions_service(check_oso_cloud):
-    process = subprocess.Popen(
-        ["make", "-C", "../services/actions"], start_new_session=True
-    )
-    ensure_port_is_open(process, 5001)
-    print("Test Actions Service spun up")
-    yield process
-    pgrp = os.getpgid(process.pid)
-    os.killpg(pgrp, signal.SIGINT)
-    process.wait()
-    print("Test Actions Service spun down")
-
-
-@pytest.fixture(scope="session")
 def check_oso_cloud():
     url = os.getenv("OSO_URL", "https://cloud.osohq.com")
     req = requests.get(url + "/api")

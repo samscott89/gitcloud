@@ -14,7 +14,7 @@ import oso_cloud
 def show(username):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read_profile", {"type": "User", "id": username}):
         raise NotFound
@@ -26,7 +26,7 @@ def show(username):
 def repo_index(username):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read_profile", {"type": "User", "id": username}):
         raise NotFound
@@ -51,7 +51,7 @@ def repo_index(username):
 def org_index(username):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read_profile", {"type": "User", "id": username}):
         raise NotFound

@@ -13,7 +13,7 @@ bp = Blueprint("repos", __name__, url_prefix="/orgs/<int:org_id>/repos")
 def index(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Organization", "id": org_id}):
         raise NotFound
@@ -32,7 +32,7 @@ def index(org_id):
 def create(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Organization", "id": org_id}):
         raise NotFound
@@ -69,7 +69,7 @@ def create(org_id):
 def show(org_id, repo_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Repository", "id": repo_id}):
         raise NotFound
@@ -83,7 +83,7 @@ def show(org_id, repo_id):
 def delete(org_id, repo_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Repository", "id": repo_id}):
         raise NotFound

@@ -24,7 +24,7 @@ resource Application {
 # all users default to members of the application
 has_role(_user: User, "member", Application{"gitcloud"});
 
-has_relation(_: Resource, "application", Application{"gitclod"});
+has_relation(_: Resource, "application", Application{"gitcloud"});
 
 resource Organization {
      permissions = [

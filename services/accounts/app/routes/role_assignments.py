@@ -14,7 +14,7 @@ bp = Blueprint("role_assignments", __name__, url_prefix="/orgs/<int:org_id>")
 def org_unassigned_users_index(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
     if not "read" in permissions:
@@ -33,7 +33,7 @@ def org_unassigned_users_index(org_id):
 def org_index(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
     if not "read" in permissions:
@@ -72,7 +72,7 @@ def org_index(org_id):
 def org_create(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     payload = cast(dict, request.get_json(force=True))
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
@@ -96,7 +96,7 @@ def org_update(org_id):
     payload = cast(dict, request.get_json(force=True))
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
     if not "read" in permissions:
@@ -121,7 +121,7 @@ def org_update(org_id):
 def org_delete(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     payload = cast(dict, request.get_json(force=True))
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
@@ -143,7 +143,7 @@ def org_delete(org_id):
 def repo_unassigned_users_index(org_id, repo_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
     if not oso.authorize(user, "view_members", repo):
@@ -163,7 +163,7 @@ def repo_index(org_id, repo_id):
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "view_members", repo):
         raise Forbidden
@@ -199,7 +199,7 @@ def repo_create(org_id, repo_id):
     payload = cast(dict, request.get_json(force=True))
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
     if not oso.authorize(user, "view_members", repo):
@@ -219,7 +219,7 @@ def repo_update(org_id, repo_id):
     payload = cast(dict, request.get_json(force=True))
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
     if not oso.authorize(user, "view_members", repo):

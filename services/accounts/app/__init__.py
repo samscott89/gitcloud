@@ -15,8 +15,7 @@ from sqlalchemy.pool import StaticPool
 
 from .models import Base, User, setup_schema
 from .fixtures import load_fixture_data
-from .authorization import oso, cache
-from .tracing import instrument_app
+from .authorization import oso
 
 PRODUCTION = os.environ.get("PRODUCTION", "0") == "1"
 PRODUCTION_DB = os.environ.get("PRODUCTION_DB", PRODUCTION)
@@ -51,8 +50,6 @@ def create_app(db_path="sqlite:///roles.db", load_fixtures=False):
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(1)
 
-    cache.init_app(app)
-    instrument_app(app) if TRACING else None
     app.secret_key = b"ball outside of the school"
     app.register_blueprint(routes.orgs.bp)
     app.register_blueprint(routes.repos.bp)
@@ -101,7 +98,6 @@ def create_app(db_path="sqlite:///roles.db", load_fixtures=False):
         Base.metadata.drop_all(bind=engine)  # type: ignore
         Base.metadata.create_all(bind=engine)  # type: ignore
         load_fixture_data(Session())
-        return
 
     @app.before_request
     def set_current_user_and_session():

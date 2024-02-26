@@ -13,7 +13,7 @@ bp = Blueprint("orgs", __name__, url_prefix="/orgs")
 def index():
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     authorized_ids = oso.list(user, "read", "Organization")
     if authorized_ids == ["*"]:
@@ -41,7 +41,7 @@ def create():
     org = Organization(**payload)
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "create", "Organization"):
         raise Forbidden
@@ -55,7 +55,7 @@ def create():
 def show(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Organization", "id": org_id}):
         raise NotFound
@@ -69,7 +69,7 @@ def show(org_id):
 def delete(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Organization", "id": org_id}):
         raise NotFound
@@ -97,7 +97,7 @@ def delete(org_id):
 def user_count(org_id):
     user = {
         "type": "User",
-        "id": str(g.current_user.id),
+        "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Organization", "id": str(org_id)}):
         raise NotFound

@@ -1,13 +1,12 @@
+import oso_cloud
 from flask import Blueprint, g, jsonify
 from typing import cast
-from werkzeug.exceptions import Forbidden, Unauthorized, NotFound
+from werkzeug.exceptions import NotFound
 
 from ..models import Organization, User, Repository
 from ..authorization import oso
 
 bp = Blueprint("users", __name__, url_prefix="/users")
-
-import oso_cloud
 
 
 @bp.route("/<username>", methods=["GET"])

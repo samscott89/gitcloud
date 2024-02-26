@@ -1,6 +1,5 @@
 from datetime import timedelta
 import os
-from typing import Any
 from flask import g, Flask, request, session as flask_session
 from werkzeug.exceptions import (
     BadRequest,
@@ -13,9 +12,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from .models import Base, User, setup_schema
+from .models import Base, setup_schema
 from .fixtures import load_fixture_data
-from .authorization import oso
 
 PRODUCTION = os.environ.get("PRODUCTION", "0") == "1"
 PRODUCTION_DB = os.environ.get("PRODUCTION_DB", PRODUCTION)

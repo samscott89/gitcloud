@@ -1,9 +1,8 @@
-from flask import Blueprint, g, request, current_app, jsonify
+from flask import Blueprint, g, request, jsonify
 from typing import cast
 from werkzeug.exceptions import Forbidden, NotFound
 
 import oso_cloud
-from .orgs import user_count
 from ..models import Organization, Repository, User
 from ..authorization import oso
 
@@ -17,9 +16,9 @@ def org_unassigned_users_index(org_id):
         "id": str(g.current_user),
     }
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
-    if not "read" in permissions:
+    if "read" not in permissions:
         raise NotFound
-    elif not "view_members" in permissions:
+    elif "view_members" not in permissions:
         raise Forbidden
     existing = oso.get(
         "has_role", {"type": "User"}, {}, {"type": "Organization", "id": org_id}
@@ -36,9 +35,9 @@ def org_index(org_id):
         "id": str(g.current_user),
     }
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
-    if not "read" in permissions:
+    if "read" not in permissions:
         raise NotFound
-    elif not "view_members" in permissions:
+    elif "view_members" not in permissions:
         raise Forbidden
 
     assignment_facts = oso.get(
@@ -76,9 +75,9 @@ def org_create(org_id):
     }
     payload = cast(dict, request.get_json(force=True))
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
-    if not "read" in permissions:
+    if "read" not in permissions:
         raise NotFound
-    elif not "manage_members" in permissions:
+    elif "manage_members" not in permissions:
         raise Forbidden
 
     org = g.session.get_or_404(Organization, id=org_id)
@@ -99,9 +98,9 @@ def org_update(org_id):
         "id": str(g.current_user),
     }
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
-    if not "read" in permissions:
+    if "read" not in permissions:
         raise NotFound
-    elif not "manage_members" in permissions:
+    elif "manage_members" not in permissions:
         raise Forbidden
     org = g.session.get_or_404(Organization, id=org_id)
     target_user = {"type": "User", "id": payload["id"]}
@@ -125,9 +124,9 @@ def org_delete(org_id):
     }
     payload = cast(dict, request.get_json(force=True))
     permissions = oso.actions(user, {"type": "Organization", "id": org_id})
-    if not "read" in permissions:
+    if "read" not in permissions:
         raise NotFound
-    elif not "manage_members" in permissions:
+    elif "manage_members" not in permissions:
         raise Forbidden
     org = g.session.get_or_404(Organization, id=org_id)
     target_user = {"type": "User", "id": payload["id"]}
@@ -241,6 +240,10 @@ def repo_update(org_id, repo_id):
 @bp.route("/repos/<int:repo_id>/role_assignments", methods=["DELETE"])
 def repo_delete(org_id, repo_id):
     payload = cast(dict, request.get_json(force=True))
+    user = {
+        "type": "User",
+        "id": str(g.current_user),
+    }
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
     if not oso.authorize(user, "view_members", repo):
         raise NotFound

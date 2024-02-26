@@ -1,12 +1,15 @@
 import pytest
 from app import create_app
 
+
 @pytest.fixture()
 def app():
     app = create_app(db_path="sqlite://", load_fixtures=True)
-    app.config.update({
-        "TESTING": True,
-    })
+    app.config.update(
+        {
+            "TESTING": True,
+        }
+    )
 
     # other setup can go here
 
@@ -18,7 +21,6 @@ def app():
 @pytest.fixture()
 def client(app):
     return app.test_client()
-
 
 
 @pytest.fixture()

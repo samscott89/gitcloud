@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from random import choice, randint
+from random import randint
 from .models import OrgRole, RepoRole, Organization, Repository, User
 from .authorization import oso
 
@@ -21,7 +21,7 @@ def limit_bulk_tell(facts, bulk_limit=20):
     total_number_facts = len(facts)
     while start_index < total_number_facts:
         oso_response = oso.bulk_tell(facts=facts[start_index:end_index])
-        if oso_response != None:
+        if oso_response is not None:
             print(
                 "An issue occurred adding facts {} - {})".format(start_index, end_index)
             )

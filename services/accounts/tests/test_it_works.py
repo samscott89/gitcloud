@@ -1,8 +1,8 @@
-
 def login(client, username):
     resp = client.post("/session/login", json={"username": username})
     assert resp.status_code == 201
     assert resp.json.get("username") == username
+
 
 def test_user_sessions(client):
     resp = client.get("/session")
@@ -21,6 +21,7 @@ def test_user_sessions(client):
     resp = client.get("/session")
     assert resp.status_code == 200
     assert resp.json in [{}, None]
+
 
 def test_list_repos(client):
     login(client, "john")

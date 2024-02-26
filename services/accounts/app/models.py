@@ -1,4 +1,4 @@
-from typing import Any, Type, cast
+from typing import Any, Type
 from sqlalchemy.types import Integer, String, Boolean
 from sqlalchemy.schema import Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship, column_property

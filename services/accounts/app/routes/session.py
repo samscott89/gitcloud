@@ -1,6 +1,6 @@
-from flask import Blueprint, g, request, current_app, jsonify, session as flask_session
+from flask import Blueprint, g, request, jsonify, session as flask_session
 from typing import cast
-from werkzeug.exceptions import BadRequest, Unauthorized
+from werkzeug.exceptions import Unauthorized
 from sqlalchemy import text
 
 
@@ -12,9 +12,7 @@ bp = Blueprint("session", __name__, url_prefix="/session")
 @bp.route("", methods=["GET"])
 def show():
     return jsonify(
-        g.session.query(User).get(g.current_user).as_json()
-        if g.current_user
-        else {}
+        g.session.query(User).get(g.current_user).as_json() if g.current_user else {}
     )
 
 

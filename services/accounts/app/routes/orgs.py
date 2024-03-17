@@ -5,13 +5,14 @@ from werkzeug.exceptions import Forbidden, NotFound
 
 from ..models import Organization
 from ..authorization import oso
+from oso_cloud import Value
 
 bp = Blueprint("orgs", __name__, url_prefix="/orgs")
 
 
 @bp.route("", methods=["GET"])
 def index():
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -39,7 +40,7 @@ def create():
     ):
         return "Organization with that name already exists", 400
     org = Organization(**payload)
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -47,13 +48,18 @@ def create():
         raise Forbidden
     g.session.add(org)
     g.session.commit()
-    oso.tell("has_role", user, "admin", {"type": "Organization", "id": str(org.id)})
+    oso.tell(
+        {
+            "name": "has_role",
+            "args": [user, "admin", {"type": "Organization", "id": str(org.id)}],
+        }
+    )
     return org.as_json(), 201  # type: ignore
 
 
 @bp.route("/<int:org_id>", methods=["GET"])
 def show(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -67,7 +73,7 @@ def show(org_id):
 
 @bp.route("/<int:org_id>", methods=["DELETE"])
 def delete(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -95,18 +101,22 @@ def delete(org_id):
 
 @bp.route("/<int:org_id>/user_count", methods=["GET"])
 def user_count(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
     if not oso.authorize(user, "read", {"type": "Organization", "id": str(org_id)}):
         raise NotFound
     org_users = oso.get(
-        "has_role",
         {
-            "type": "User",
-        },
-        {},
-        {"type": "Organization", "id": str(org_id)},
+            "name": "has_role",
+            "args": [
+                {
+                    "type": "User",
+                },
+                {},
+                {"type": "Organization", "id": str(org_id)},
+            ],
+        }
     )
     return str(len(list(org_users)))

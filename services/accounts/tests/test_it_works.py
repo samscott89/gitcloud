@@ -20,6 +20,7 @@ def test_user_sessions(client):
 
     resp = client.get("/session")
     assert resp.status_code == 200
+    # we should get back nothing
     assert resp.json in [{}, None]
 
 

@@ -1,4 +1,5 @@
 from flask import Blueprint, g, request, jsonify
+from oso_cloud import Value
 from typing import cast
 from werkzeug.exceptions import NotFound, Forbidden
 
@@ -11,7 +12,7 @@ bp = Blueprint("repos", __name__, url_prefix="/orgs/<int:org_id>/repos")
 
 @bp.route("", methods=["GET"])
 def index(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -30,7 +31,7 @@ def index(org_id):
 
 @bp.route("", methods=["POST"])
 def create(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -53,21 +54,30 @@ def create(org_id):
 
     repo = Repository(name=payload["name"], org_id=org_id)
     g.session.add(repo)
-    repoValue = {"type": "Repository", "id": repo.id}
-    oso.tell(
-        "has_relation",
-        repoValue,
-        "organization",
-        {"type": "Organization", "id": org_id},
+    repoValue: Value = {"type": "Repository", "id": str(repo.id)}
+    oso.bulk(
+        tell=[
+            {
+                "name": "has_relation",
+                "args": [
+                    repoValue,
+                    "organization",
+                    {"type": "Organization", "id": org_id},
+                ],
+            },
+            {
+                "name": "has_role",
+                "args": [user, "admin", repoValue],
+            },
+        ]
     )
-    oso.tell("has_role", g.current_user, "admin", repoValue)
     g.session.commit()
     return repo.as_json(), 201  # type: ignore
 
 
 @bp.route("/<int:repo_id>", methods=["GET"])
 def show(org_id, repo_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -81,7 +91,7 @@ def show(org_id, repo_id):
 
 @bp.route("/<int:repo_id>", methods=["DELETE"])
 def delete(org_id, repo_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }

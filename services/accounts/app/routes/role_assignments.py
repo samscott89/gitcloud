@@ -3,6 +3,7 @@ from typing import cast
 from werkzeug.exceptions import Forbidden, NotFound
 
 import oso_cloud
+from oso_cloud import Value
 from ..models import Organization, Repository, User
 from ..authorization import oso
 
@@ -11,7 +12,7 @@ bp = Blueprint("role_assignments", __name__, url_prefix="/orgs/<int:org_id>")
 
 @bp.route("/unassigned_users", methods=["GET"])
 def org_unassigned_users_index(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -21,16 +22,20 @@ def org_unassigned_users_index(org_id):
     elif "view_members" not in permissions:
         raise Forbidden
     existing = oso.get(
-        "has_role", {"type": "User"}, {}, {"type": "Organization", "id": org_id}
+        {
+            "name": "has_role",
+            "args": [{"type": "User"}, None, {"type": "Organization", "id": org_id}],
+        }
     )
-    existing_ids = {e["args"][0]["id"] for e in existing}
+    existing_users: list[oso_cloud.ValueDict] = [e["args"][0] for e in existing]
+    existing_ids = {e["id"] for e in existing_users}  # type: ignore
     unassigned = g.session.query(User).filter(User.id.notin_(existing_ids))
     return jsonify([u.as_json() for u in unassigned])
 
 
 @bp.route("/role_assignments", methods=["GET"])
 def org_index(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -41,12 +46,15 @@ def org_index(org_id):
         raise Forbidden
 
     assignment_facts = oso.get(
-        "has_role", {"type": "User"}, None, {"type": "Organization", "id": org_id}
+        {
+            "name": "has_role",
+            "args": [{"type": "User"}, None, {"type": "Organization", "id": org_id}],
+        }
     )
     assignment_ids = [
         (
-            a["args"][0]["id"],
-            a["args"][1]["id"],
+            a["args"][0]["id"],  # type: ignore
+            a["args"][1]["id"],  # type: ignore
         )
         for a in assignment_facts
     ]
@@ -69,7 +77,7 @@ def org_index(org_id):
 
 @bp.route("/role_assignments", methods=["POST"])
 def org_create(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -81,10 +89,10 @@ def org_create(org_id):
         raise Forbidden
 
     org = g.session.get_or_404(Organization, id=org_id)
-    target_user = {"type": "User", "id": payload["id"]}
+    target_user: Value = {"type": "User", "id": payload["id"]}
     if not oso.authorize(user, "read", target_user):
         raise NotFound
-    oso.tell("has_role", target_user, payload["role"], org)
+    oso.tell({"name": "has_role", "args": [target_user, payload["role"], org]})
 
     user_obj: User = g.session.get_or_404(User, id=user["id"])
     return {"user": user_obj.as_json(), "role": payload["role"]}, 201  # type: ignore
@@ -93,7 +101,7 @@ def org_create(org_id):
 @bp.route("/role_assignments", methods=["PATCH"])
 def org_update(org_id):
     payload = cast(dict, request.get_json(force=True))
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -103,7 +111,7 @@ def org_update(org_id):
     elif "manage_members" not in permissions:
         raise Forbidden
     org = g.session.get_or_404(Organization, id=org_id)
-    target_user = {"type": "User", "id": payload["id"]}
+    target_user: Value = {"type": "User", "id": payload["id"]}
     if not oso.authorize(user, "read", target_user):
         raise NotFound
 
@@ -118,7 +126,7 @@ def org_update(org_id):
 
 @bp.route("/role_assignments", methods=["DELETE"])
 def org_delete(org_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -129,7 +137,7 @@ def org_delete(org_id):
     elif "manage_members" not in permissions:
         raise Forbidden
     org = g.session.get_or_404(Organization, id=org_id)
-    target_user = {"type": "User", "id": payload["id"]}
+    target_user: Value = {"type": "User", "id": payload["id"]}
     if not oso.authorize(user, "read", target_user):
         raise NotFound
 
@@ -140,7 +148,7 @@ def org_delete(org_id):
 
 @bp.route("/repos/<int:repo_id>/unassigned_users", methods=["GET"])
 def repo_unassigned_users_index(org_id, repo_id):
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -150,9 +158,12 @@ def repo_unassigned_users_index(org_id, repo_id):
     if not oso.authorize(user, "manage_members", repo):
         raise Forbidden
     existing = oso.get(
-        "has_role", {"type": User}, None, {"type": "Repository", "id": repo.id}
+        {
+            "name": "has_role",
+            "args": [{"type": User}, None, {"type": "Repository", "id": repo.id}],
+        }
     )
-    existing_ids = {fact["args"][0]["id"] for fact in existing}
+    existing_ids = {fact["args"][0]["id"] for fact in existing}  # type: ignore
     unassigned = g.session.query(User).filter(User.id.notin_(existing_ids))
     return jsonify([u.as_json() for u in unassigned])
 
@@ -160,19 +171,22 @@ def repo_unassigned_users_index(org_id, repo_id):
 @bp.route("/repos/<int:repo_id>/role_assignments", methods=["GET"])
 def repo_index(org_id, repo_id):
     repo = g.session.get_or_404(Repository, id=repo_id, org_id=org_id)
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
     if not oso.authorize(user, "view_members", repo):
         raise Forbidden
     assignment_facts = oso.get(
-        "has_role", {"type": "User"}, None, {"type": "Repository", "id": repo_id}
+        {
+            "name": "has_role",
+            "args": [{"type": "User"}, None, {"type": "Repository", "id": repo_id}],
+        }
     )
     assignment_ids = [
         (
-            a["args"][0]["id"],
-            a["args"][1]["id"],
+            a["args"][0]["id"],  # type: ignore
+            a["args"][1]["id"],  # type: ignore
         )
         for a in assignment_facts
     ]
@@ -196,7 +210,7 @@ def repo_index(org_id, repo_id):
 @bp.route("/repos/<int:repo_id>/role_assignments", methods=["POST"])
 def repo_create(org_id, repo_id):
     payload = cast(dict, request.get_json(force=True))
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -205,10 +219,10 @@ def repo_create(org_id, repo_id):
         raise NotFound
     if not oso.authorize(user, "manage_members", repo):
         raise Forbidden
-    user = {"type": "User", "id": payload["id"]}
+    user: Value = {"type": "User", "id": payload["id"]}
     if not oso.authorize(user, "read", user):
         raise NotFound
-    oso.tell("has_role", user, payload["role"], repo)
+    oso.tell({"name": "has_role", "args": [user, payload["role"], repo]})
     user_obj: User = g.session.get_or_404(User, id=user["id"])
     return {"user": user_obj.as_json(), "role": payload["role"]}, 201  # type: ignore
 
@@ -216,7 +230,7 @@ def repo_create(org_id, repo_id):
 @bp.route("/repos/<int:repo_id>/role_assignments", methods=["PATCH"])
 def repo_update(org_id, repo_id):
     payload = cast(dict, request.get_json(force=True))
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }
@@ -240,7 +254,7 @@ def repo_update(org_id, repo_id):
 @bp.route("/repos/<int:repo_id>/role_assignments", methods=["DELETE"])
 def repo_delete(org_id, repo_id):
     payload = cast(dict, request.get_json(force=True))
-    user = {
+    user: Value = {
         "type": "User",
         "id": str(g.current_user),
     }

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from random import choice, randint
-from .models import Is24sue
+from .models import Issue
 from .authorization import oso
 
 from faker import Faker

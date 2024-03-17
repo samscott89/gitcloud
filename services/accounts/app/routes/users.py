@@ -11,11 +11,14 @@ bp = Blueprint("users", __name__, url_prefix="/users")
 
 @bp.route("/<username>", methods=["GET"])
 def show(username):
-    user = {
-        "type": "User",
-        "id": str(g.current_user),
-    }
-    if not oso.authorize(user, "read_profile", {"type": "User", "id": username}):
+    if not oso.authorize(
+        {
+            "type": "User",
+            "id": str(g.current_user),
+        },
+        "read_profile",
+        {"type": "User", "id": username},
+    ):
         raise NotFound
     user = g.session.get_or_404(User, username=username)
     return user.as_json()

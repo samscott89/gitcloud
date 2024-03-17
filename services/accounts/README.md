@@ -23,7 +23,7 @@ chmod +x standalone
 ./standalone
 ```
 
-### Install python
+### (Optional) Install python
 
 Install `uv`
 ```

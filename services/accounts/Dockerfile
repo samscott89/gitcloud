@@ -9,6 +9,6 @@ RUN \
  apk --purge del .build-deps
 
 COPY . /app
-WORKDIR app
+WORKDIR /app
 ENTRYPOINT [ "gunicorn" ]
 CMD [ "-b", ":5000", "-w", "2", "app:create_app()"]

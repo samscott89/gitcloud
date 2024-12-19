@@ -20,20 +20,6 @@ class User(Base):
     name = Column(String)
 
 
-class Group(Base):
-    __tablename__ = "groups"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-
-
-class CustomRole(Base):
-    __tablename__ = "custom_roles"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-
-
 class Organization(Base):
     __tablename__ = "organizations"
 
@@ -75,26 +61,6 @@ Organization.repository_count = column_property(
     .scalar_subquery(),
 )
 
-
-### Authorization Models
-
-
-class RepoRole(Base):
-    __tablename__ = "repo_roles"
-
-    id = Column(Integer, primary_key=True)
-    repo_id = Column(Integer, ForeignKey("repositories.id"), index=True)
-    user_id = Column(String, ForeignKey("users.id"), index=True)
-    role = Column(String(256))
-
-
-class OrgRole(Base):
-    __tablename__ = "org_roles"
-
-    id = Column(Integer, primary_key=True)
-    org_id = Column(Integer, ForeignKey("organizations.id"), index=True)
-    user_id = Column(String, ForeignKey("users.id"), index=True)
-    role = Column(String(256))
 
 
 # Creates Marshmallow schemas for all models which makes
